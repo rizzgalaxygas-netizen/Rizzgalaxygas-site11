@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>El Gran John’s Massive Balls</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #030308;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #ffffff;
+            touch-action: manipulation;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            touch-action: manipulation;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: env(safe-area-inset-top, 16px) env(safe-area-inset-right, 16px) env(safe-area-inset-bottom, 16px) env(safe-area-inset-left, 16px);
+            touch-action: manipulation;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            padding: 12px 20px;
+            background: rgba(15, 15, 30, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .hud-metric {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8a8aa3;
+            font-weight: 700;
+        }
+
+        .hud-value {
+            font-size: 1.3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #balls-grabbed-val {
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #rebirths-val {
+            background: linear-gradient(135deg, #00ff87 0%, #60efff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Dumpster Floating UI Prompt */
+        #dumpster-prompt {
+            position: absolute;
+            transform: translate(-50%, -100%);
+            background: rgba(10, 25, 15, 0.9);
+            border: 2px solid #2e8b57;
+            padding: 8px 14px;
+            border-radius: 10px;
+            text-align: center;
+            pointer-events: none;
+            z-index: 15;
+            display: none;
+            box-shadow: 0 0 15px rgba(46, 139, 87, 0.6);
+        }
+
+        #dumpster-prompt .prompt-title {
+            font-weight: 900;
+            color: #55ff55;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        #dumpster-prompt .prompt-desc {
+            font-size: 0.7rem;
+            color: #d0e8d0;
+            margin-top: 2px;
+        }
+
+        /* Charge Bar HUD */
+        #charge-container {
+            position: absolute;
+            bottom: 145px;
+            right: 30px;
+            width: 90px;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        #charge-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff4d4d, #ff0000, #b30000);
+            transition: width 0.05s linear;
+        }
+
+        /* Virtual Joystick Controls */
+        #joystick-zone {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 130px;
+            height: 130px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        #joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #00f2fe 0%, #4facfe 100%);
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.6);
+            pointer-events: none;
+        }
+
+        /* Action Buttons */
+        .controls-layer {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            pointer-events: auto;
+            z-index: 12;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            touch-action: manipulation;
+        }
+
+        .action-btn {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,0,127,0.9) 0%, rgba(121,40,202,0.9) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.6), inset 0 0 10px rgba(255,255,255,0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: 900;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .action-btn:active {
+            transform: scale(0.92);
+        }
+
+        #stand-btn {
+            display: none;
+            background: radial-gradient(circle, rgba(0,242,254,0.9) 0%, rgba(79,172,254,0.9) 100%);
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.6);
+        }
+
+        #hide-btn {
+            display: none;
+            background: radial-gradient(circle, rgba(46,139,87,0.9) 0%, rgba(34,139,34,0.9) 100%);
+            box-shadow: 0 0 20px rgba(46,139,87,0.6);
+        }
+
+        #shop-btn {
+            background: radial-gradient(circle, rgba(255,170,0,0.9) 0%, rgba(255,100,0,0.9) 100%);
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.6);
+        }
+
+        /* Fully Scrollable & Mobile Friendly Upgrades Shop Modal */
+        #shop-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 92%;
+            max-width: 640px;
+            height: 84%;
+            background: rgba(10, 10, 25, 0.98);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            z-index: 30;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            pointer-events: auto;
+            touch-action: pan-y !important;
+            -webkit-overflow-scrolling: touch;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+
+        #shop-modal * {
+            touch-action: pan-y !important;
+        }
+
+        .shop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            padding-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .shop-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .shop-header h2 {
+            font-size: 1.3rem;
+            background: linear-gradient(45deg, #ffaa00, #ff007f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .rebirth-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #00ff87, #60efff);
+            border: none;
+            border-radius: 20px;
+            color: #000;
+            font-weight: 900;
+            font-size: 0.75rem;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 255, 135, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            touch-action: manipulation;
+        }
+
+        .rebirth-btn.disabled {
+            background: #2a2a40;
+            color: #6a6a88;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .close-btn {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: #fff;
+            font-size: 1.2rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+
+        .shop-grid {
+            flex: 1 1 auto;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            padding-right: 6px;
+        }
+
+        .upgrade-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .upgrade-card h4 {
+            font-size: 0.9rem;
+            color: #ffdab9;
+            margin-bottom: 4px;
+        }
+
+        .upgrade-card p {
+            font-size: 0.7rem;
+            color: #a0a0c0;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+
+        .buy-btn {
+            padding: 8px 14px;
+            background: linear-gradient(135deg, #ff007f, #7928ca);
+            border: none;
+            border-radius: 20px;
+            color: #fff;
+            font-weight: bold;
+            font-size: 0.75rem;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .buy-btn.purchased {
+            background: #2a2a40;
+            color: #6a6a88;
+            cursor: default;
+        }
+
+        /* Start Overlay Screen */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 15, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            text-align: center;
+            pointer-events: auto;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            line-height: 1.1;
+            font-weight: 900;
+            margin-bottom: 12px;
+            background: linear-gradient(45deg, #ff007f, #ffaa00, #ffdab9);
+            background-size: 200% 200%;
+            animation: gradientShift 4s ease infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 10px 30px rgba(255, 0, 127, 0.3);
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .overlay p {
+            font-size: 0.95rem;
+            color: #a0a0c0;
+            max-width: 460px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            padding: 16px 42px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #ffffff;
+            background: linear-gradient(135deg, #ff007f 0%, #7928ca 100%);
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 8px 25px rgba(255, 0, 127, 0.4);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            touch-action: manipulation;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- Dumpster Floating UI Prompt -->
+    <div id="dumpster-prompt">
+        <div class="prompt-title">Dumpster</div>
+        <div class="prompt-desc">you can hide in it</div>
+    </div>
+
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div class="hud-metric">
+                <span class="hud-label">Ragdolls</span>
+                <span class="hud-value" id="kills-val">0</span>
+            </div>
+            <div class="hud-metric">
+                <span class="hud-label">Balls Grabbed</span>
+                <span class="hud-value" id="balls-grabbed-val">0</span>
+            </div>
+            <div class="hud-metric">
+                <span class="hud-label">Rebirths</span>
+                <span class="hud-value" id="rebirths-val">0</span>
+            </div>
+        </div>
+
+        <div id="charge-container">
+            <div id="charge-fill"></div>
+        </div>
+
+        <div id="joystick-zone">
+            <div id="joystick-knob"></div>
+        </div>
+
+        <div class="controls-layer">
+            <div id="stand-btn" class="action-btn">
+                <span>STAND</span>
+                <span style="font-size: 0.5rem; opacity: 0.9;">UP</span>
+            </div>
+            <div id="hide-btn" class="action-btn">
+                <span>HIDE IN</span>
+                <span style="font-size: 0.5rem; opacity: 0.9;">DUMPSTER</span>
+            </div>
+            <div id="shop-btn" class="action-btn">
+                <span>UPGRADE</span>
+                <span style="font-size: 0.5rem; opacity: 0.9;">SHOP</span>
+            </div>
+            <div id="shoot-btn" class="action-btn">
+                <span id="shoot-btn-main">HOLD TO</span>
+                <span id="shoot-btn-sub" style="font-size: 0.5rem; opacity: 0.9;">CHARGE</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shop Modal -->
+    <div id="shop-modal">
+        <div class="shop-header">
+            <div class="shop-header-left">
+                <h2>Upgrades Shop</h2>
+                <button id="rebirth-action-btn" class="rebirth-btn disabled">
+                    <span>REBIRTH</span>
+                    <span id="rebirth-status-sub" style="font-size:0.5rem; font-weight:normal;">Buy All Upgrades First</span>
+                </button>
+            </div>
+            <button class="close-btn" id="close-shop">×</button>
+        </div>
+        <div class="shop-grid" id="shop-grid-container"></div>
+    </div>
+
+    <!-- Start Overlay Screen -->
+    <div id="start-screen" class="overlay">
+        <h1>El Gran John’s Massive Balls</h1>
+        <p>Launch your massive balls at people.</p>
+        <button class="btn" id="start-btn">START GAME</button>
+    </div>
+
+    <script>
+        // Prevent Safari double-tap zoom globally on double touch
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, { passive: false });
+
+        let scene, camera, renderer;
+        let johnCharacter;
+        let citizens = [];
+        let drivingCars = [];
+        let dumpsters = [];
+        let activeProjectiles = [];
+        let buildingMeshInstanced;
+        let buildingData = [];
+
+        let isGameRunning = false;
+        let kills = 0;
+        let ballsGrabbed = 0;
+        let rebirths = 0;
+        let isCharging = false;
+        let isShootingHeld = false;
+        let autoShootTimer = 0;
+        let chargeProgress = 0;
+        let isHiddenInDumpster = false;
+        let autoShootUnlocked = false;
+
+        let upgradeMultipliers = {
+            speed: 1.0,
+            ballSize: 1.0,
+            chargeSpeed: 1.0,
+            knockback: 1.0,
+            killMultiplier: 1.0
+        };
+
+        const CITY_SIZE = 600;
+        const NUM_CITIZENS = 1000; // Exactly 1,000 citizens
+        const SPAWN_CLEARANCE_RADIUS = 50; // Keeps spawn area uncluttered
+        const NUM_CARS = 20;
+        const NUM_BUILDINGS = 400;
+        const NUM_DUMPSTERS = 120;
+        const GRID_SPACING = 60;
+        const ROAD_WIDTH = 20;
+
+        const streetX = [];
+        const streetZ = [];
+        for (let coord = -CITY_SIZE + GRID_SPACING; coord < CITY_SIZE - GRID_SPACING; coord += GRID_SPACING) {
+            streetX.push(coord);
+            streetZ.push(coord);
+        }
+
+        const upgradesList = [];
+
+        // Special Base Upgrades
+        upgradesList.push({
+            id: 'auto_shoot',
+            name: 'Auto Shooter Upgrade',
+            desc: 'Automatically fires fully charged balls every 0.1s when holding the button!',
+            baseCost: 250,
+            purchased: false,
+            special: 'auto_shoot'
+        });
+
+        upgradesList.push({
+            id: 'kill_2x',
+            name: 'Double Ragdolls Upgrade',
+            desc: 'Increases all earned ragdolls by 2x!',
+            baseCost: 300,
+            purchased: false,
+            special: 'kill_2x'
+        });
+
+        upgradesList.push({
+            id: 'kill_5x',
+            name: 'Quintuple Ragdolls Upgrade',
+            desc: 'Increases all earned ragdolls by 5x!',
+            baseCost: 400,
+            purchased: false,
+            special: 'kill_5x'
+        });
+
+        upgradesList.push({
+            id: 'ball_300',
+            name: '300% Mega Ball Size Upgrade',
+            desc: 'Raises your ball size multiplier directly to +300% (4x baseline size)!',
+            baseCost: 500,
+            purchased: false,
+            special: 'ball_300'
+        });
+
+        upgradesList.push({
+            id: 'knockback_200',
+            name: '200% Super Knockback Upgrade',
+            desc: 'Increases ball knockback power by +200%!',
+            baseCost: 350,
+            purchased: false,
+            special: 'knockback_200'
+        });
+
+        upgradesList.push({
+            id: 'speed_150',
+            name: '150% Turbo Speed Upgrade',
+            desc: 'Boosts player movement speed by +150%!',
+            baseCost: 350,
+            purchased: false,
+            special: 'speed_150'
+        });
+
+        // Generate 470 distinct tier upgrades across different stat categories (Total 476 upgrades)
+        const upgradeTypes = [
+            { name: 'Ball Expansion Tier', type: 1, fn: (i) => `Increases Ball Size by +${(i * 2)}%.` },
+            { name: 'Hybrid Overcharge Tier', type: 2, fn: (i) => `Increases Ball Size by +${(i)}% & Charge Speed by +${(i * 3)}%.` },
+            { name: 'Mobility & Force Tier', type: 3, fn: (i) => `Increases movement speed & ball knockback power by +${(i * 1.2).toFixed(1)}%.` },
+            { name: 'Ragdoll Harvest Multiplier', type: 4, fn: (i) => `Boosts base ragdoll earnings by +${(i * 1.5).toFixed(1)}%.` },
+            { name: 'Ball Velocity Burst', type: 5, fn: (i) => `Increases projectile travel velocity by +${(i * 1.1).toFixed(1)}%.` }
+        ];
+
+        for (let i = 1; i <= 470; i++) {
+            const cat = upgradeTypes[i % upgradeTypes.length];
+            upgradesList.push({
+                id: i,
+                name: `${cat.name} #${i}`,
+                desc: cat.fn(i),
+                baseCost: Math.floor(i * 2.5) + 1,
+                purchased: false,
+                type: cat.type
+            });
+        }
+
+        function getUpgradeCost(upg) {
+            const rebirthMultiplier = Math.pow(1.8, rebirths);
+            return Math.floor(upg.baseCost * rebirthMultiplier);
+        }
+
+        function sortUpgrades() {
+            upgradesList.sort((a, b) => getUpgradeCost(a) - getUpgradeCost(b));
+        }
+
+        function saveGameProgress() {
+            const dataToSave = {
+                kills: kills,
+                ballsGrabbed: ballsGrabbed,
+                rebirths: rebirths,
+                autoShootUnlocked: autoShootUnlocked,
+                upgradeMultipliers: upgradeMultipliers,
+                purchasedIds: upgradesList.filter(u => u.purchased).map(u => u.id)
+            };
+            try {
+                localStorage.setItem('el_gran_john_save_v2', JSON.stringify(dataToSave));
+            } catch(e){}
+        }
+
+        function loadGameProgress() {
+            try {
+                const saved = localStorage.getItem('el_gran_john_save_v2');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    kills = data.kills || 0;
+                    ballsGrabbed = data.ballsGrabbed || 0;
+                    rebirths = data.rebirths || 0;
+                    autoShootUnlocked = !!data.autoShootUnlocked;
+                    if (data.upgradeMultipliers) upgradeMultipliers = data.upgradeMultipliers;
+                    
+                    if (data.purchasedIds && Array.isArray(data.purchasedIds)) {
+                        data.purchasedIds.forEach(id => {
+                            const upg = upgradesList.find(u => u.id === id);
+                            if (upg) upg.purchased = true;
+                        });
+                    }
+
+                    if (autoShootUnlocked) {
+                        shootBtnMain.textContent = 'HOLD TO';
+                        shootBtnSub.textContent = 'AUTO FIRE';
+                    }
+                }
+            } catch(e){}
+        }
+
+        function triggerRebirth() {
+            const allBought = upgradesList.every(u => u.purchased);
+            if (!allBought) return;
+
+            rebirths++;
+            kills = 0;
+            ballsGrabbed = 0;
+            autoShootUnlocked = false;
+
+            shootBtnMain.textContent = 'HOLD TO';
+            shootBtnSub.textContent = 'CHARGE';
+
+            upgradesList.forEach(u => u.purchased = false);
+
+            upgradeMultipliers = {
+                speed: 1.0,
+                ballSize: 1.0,
+                chargeSpeed: 1.0,
+                knockback: 1.0,
+                killMultiplier: Math.pow(1.5, rebirths)
+            };
+
+            saveGameProgress();
+            populateShopUI();
+
+            killsEl.textContent = Math.floor(kills);
+            ballsGrabbedEl.textContent = ballsGrabbed;
+            rebirthsEl.textContent = rebirths;
+
+            alert(`REBIRTH SUCCESSFUL!\nYour Ragdoll Multiplier is now ${(upgradeMultipliers.killMultiplier).toFixed(2)}x!\nUpgrades have become more expensive.`);
+        }
+
+        const joystickDir = { x: 0, z: 0 };
+        let joystickActive = false;
+        const joystickZone = document.getElementById('joystick-zone');
+        const joystickKnob = document.getElementById('joystick-knob');
+        const chargeFill = document.getElementById('charge-fill');
+        const standBtn = document.getElementById('stand-btn');
+        const hideBtn = document.getElementById('hide-btn');
+        const shopBtn = document.getElementById('shop-btn');
+        const shopModal = document.getElementById('shop-modal');
+        const closeShop = document.getElementById('close-shop');
+        const shopGridContainer = document.getElementById('shop-grid-container');
+        const dumpsterPromptEl = document.getElementById('dumpster-prompt');
+        const rebirthActionBtn = document.getElementById('rebirth-action-btn');
+        const rebirthStatusSub = document.getElementById('rebirth-status-sub');
+
+        const keys = {};
+        const killsEl = document.getElementById('kills-val');
+        const ballsGrabbedEl = document.getElementById('balls-grabbed-val');
+        const rebirthsEl = document.getElementById('rebirths-val');
+        const startScreen = document.getElementById('start-screen');
+        const shootBtn = document.getElementById('shoot-btn');
+        const shootBtnMain = document.getElementById('shoot-btn-main');
+        const shootBtnSub = document.getElementById('shoot-btn-sub');
+
+        const dummy = new THREE.Object3D();
+
+        function isOnScreen(position) {
+            const tempVector = position.clone();
+            tempVector.project(camera);
+            return (tempVector.x >= -1 && tempVector.x <= 1 && tempVector.y >= -1 && tempVector.y <= 1 && tempVector.z >= 0 && tempVector.z <= 1);
+        }
+
+        function createCityRoadsAndSidewalks() {
+            const cityGroup = new THREE.Group();
+
+            const groundGeo = new THREE.PlaneGeometry(CITY_SIZE * 2, CITY_SIZE * 2);
+            const groundMat = new THREE.MeshLambertMaterial({ color: 0x181820 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.05;
+            cityGroup.add(ground);
+
+            const roadMat = new THREE.MeshLambertMaterial({ color: 0x222328 });
+            const sidewalkMat = new THREE.MeshLambertMaterial({ color: 0x8c8c94 });
+            const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const curbMat = new THREE.MeshLambertMaterial({ color: 0x55555c });
+
+            streetX.forEach(x => {
+                const roadGeo = new THREE.PlaneGeometry(ROAD_WIDTH, CITY_SIZE * 2);
+                const road = new THREE.Mesh(roadGeo, roadMat);
+                road.rotation.x = -Math.PI / 2;
+                road.position.set(x, 0, 0);
+                cityGroup.add(road);
+
+                const sidewalkLeft = new THREE.Mesh(new THREE.BoxGeometry(3, 0.2, CITY_SIZE * 2), sidewalkMat);
+                sidewalkLeft.position.set(x - ROAD_WIDTH / 2 - 1.5, 0.1, 0);
+                cityGroup.add(sidewalkLeft);
+
+                const sidewalkRight = new THREE.Mesh(new THREE.BoxGeometry(3, 0.2, CITY_SIZE * 2), sidewalkMat);
+                sidewalkRight.position.set(x + ROAD_WIDTH / 2 + 1.5, 0.1, 0);
+                cityGroup.add(sidewalkRight);
+
+                const curbL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.25, CITY_SIZE * 2), curbMat);
+                curbL.position.set(x - ROAD_WIDTH / 2, 0.12, 0);
+                cityGroup.add(curbL);
+
+                const curbR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.25, CITY_SIZE * 2), curbMat);
+                curbR.position.set(x + ROAD_WIDTH / 2, 0.12, 0);
+                cityGroup.add(curbR);
+
+                for (let z = -CITY_SIZE; z < CITY_SIZE; z += 12) {
+                    const dash = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 6), stripeMat);
+                    dash.rotation.x = -Math.PI / 2;
+                    dash.position.set(x, 0.02, z);
+                    cityGroup.add(dash);
+                }
+            });
+
+            streetZ.forEach(z => {
+                const roadGeo = new THREE.PlaneGeometry(CITY_SIZE * 2, ROAD_WIDTH);
+                const road = new THREE.Mesh(roadGeo, roadMat);
+                road.rotation.x = -Math.PI / 2;
+                road.position.set(0, 0.001, z);
+                cityGroup.add(road);
+
+                const sidewalkTop = new THREE.Mesh(new THREE.BoxGeometry(CITY_SIZE * 2, 0.2, 3), sidewalkMat);
+                sidewalkTop.position.set(0, 0.1, z - ROAD_WIDTH / 2 - 1.5);
+                cityGroup.add(sidewalkTop);
+
+                const sidewalkBottom = new THREE.Mesh(new THREE.BoxGeometry(CITY_SIZE * 2, 0.2, 3), sidewalkMat);
+                sidewalkBottom.position.set(0, 0.1, z + ROAD_WIDTH / 2 + 1.5);
+                cityGroup.add(sidewalkBottom);
+
+                const curbT = new THREE.Mesh(new THREE.BoxGeometry(CITY_SIZE * 2, 0.25, 0.4), curbMat);
+                curbT.position.set(0, 0.12, z - ROAD_WIDTH / 2);
+                cityGroup.add(curbT);
+
+                const curbB = new THREE.Mesh(new THREE.BoxGeometry(CITY_SIZE * 2, 0.25, 0.4), curbMat);
+                curbB.position.set(0, 0.12, z + ROAD_WIDTH / 2);
+                cityGroup.add(curbB);
+
+                for (let x = -CITY_SIZE; x < CITY_SIZE; x += 12) {
+                    const dash = new THREE.Mesh(new THREE.PlaneGeometry(6, 0.5), stripeMat);
+                    dash.rotation.x = -Math.PI / 2;
+                    dash.position.set(x, 0.025, z);
+                    cityGroup.add(dash);
+                }
+            });
+
+            streetX.forEach(sx => {
+                streetZ.forEach(sz => {
+                    const numStripes = 6;
+                    const stripeW = 1.8;
+                    const stripeH = 8.0;
+                    for (let i = 0; i < numStripes; i++) {
+                        const zebra = new THREE.Mesh(new THREE.PlaneGeometry(stripeW, stripeH), stripeMat);
+                        zebra.rotation.x = -Math.PI / 2;
+                        zebra.position.set(sx - ROAD_WIDTH/2 + 3.5 + i * 2.6, 0.03, sz + ROAD_WIDTH / 2 + 4.5);
+                        cityGroup.add(zebra);
+                    }
+                });
+            });
+
+            scene.add(cityGroup);
+        }
+
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x030308, 0.004);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 28, 26);
+
+            renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            renderer.shadowMap.enabled = false;
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+            dirLight.position.set(150, 250, 150);
+            scene.add(dirLight);
+
+            createCityRoadsAndSidewalks();
+            createCityStreetsAndHouses();
+            createDumpsters();
+            createRemodeledCitizens();
+            createDrivingCars();
+
+            johnCharacter = new DetailedCharacter(true, 0x5a5438, 0x1f1f2e);
+
+            loadGameProgress();
+            populateShopUI();
+
+            killsEl.textContent = Math.floor(kills);
+            ballsGrabbedEl.textContent = ballsGrabbed;
+            rebirthsEl.textContent = rebirths;
+
+            window.addEventListener('resize', onWindowResize);
+            setupJoystick();
+
+            window.addEventListener('keydown', (e) => {
+                keys[e.code] = true;
+                if (e.code === 'Space') startShooting();
+                if (e.code === 'KeyR') standUpJohn();
+                if (e.code === 'KeyH') toggleDumpsterHide();
+            });
+            window.addEventListener('keyup', (e) => {
+                keys[e.code] = false;
+                if (e.code === 'Space') stopShooting();
+            });
+
+            const bindPreventTouch = (element, startHandler, stopHandler = null) => {
+                const handleStart = (e) => {
+                    if (e.cancelable) e.preventDefault();
+                    e.stopPropagation();
+                    startHandler(e);
+                };
+                element.addEventListener('touchstart', handleStart, { passive: false });
+                element.addEventListener('pointerdown', handleStart);
+
+                if (stopHandler) {
+                    const handleStop = (e) => {
+                        if (e.cancelable) e.preventDefault();
+                        e.stopPropagation();
+                        stopHandler(e);
+                    };
+                    element.addEventListener('touchend', handleStop, { passive: false });
+                    element.addEventListener('pointerup', handleStop);
+                    element.addEventListener('pointerleave', handleStop);
+                }
+            };
+
+            bindPreventTouch(shootBtn, startShooting, stopShooting);
+            bindPreventTouch(standBtn, standUpJohn);
+            bindPreventTouch(hideBtn, toggleDumpsterHide);
+            bindPreventTouch(shopBtn, () => {
+                populateShopUI();
+                shopModal.style.display = 'flex';
+            });
+
+            closeShop.addEventListener('click', () => {
+                shopModal.style.display = 'none';
+            });
+
+            rebirthActionBtn.addEventListener('click', () => {
+                triggerRebirth();
+            });
+
+            document.getElementById('start-btn').addEventListener('click', startGame);
+
+            renderer.render(scene, camera);
+        }
+
+        function startShooting() {
+            isShootingHeld = true;
+            if (!johnCharacter || johnCharacter.isRagdoll || isHiddenInDumpster) return;
+            isCharging = true;
+            if (autoShootUnlocked) {
+                chargeProgress = 100;
+                tryReleaseCharge(1.0);
+                autoShootTimer = 0;
+            } else {
+                chargeProgress = 0;
+            }
+        }
+
+        function stopShooting() {
+            isShootingHeld = false;
+            if (!autoShootUnlocked && isCharging && johnCharacter && !johnCharacter.isRagdoll && !isHiddenInDumpster) {
+                const finalPower = chargeProgress / 100;
+                tryReleaseCharge(finalPower);
+            }
+            isCharging = false;
+            chargeProgress = 0;
+            chargeFill.style.width = '0%';
+        }
+
+        function populateShopUI() {
+            sortUpgrades();
+            shopGridContainer.innerHTML = '';
+
+            const allPurchased = upgradesList.every(u => u.purchased);
+            if (allPurchased) {
+                rebirthActionBtn.classList.remove('disabled');
+                rebirthStatusSub.textContent = 'READY TO REBIRTH!';
+            } else {
+                rebirthActionBtn.classList.add('disabled');
+                const countBought = upgradesList.filter(u => u.purchased).length;
+                rebirthStatusSub.textContent = `${countBought}/${upgradesList.length} Upgrades Bought`;
+            }
+
+            upgradesList.forEach((upg) => {
+                const currentCost = getUpgradeCost(upg);
+                const card = document.createElement('div');
+                card.className = 'upgrade-card';
+                card.innerHTML = `
+                    <div>
+                        <h4>${upg.name}</h4>
+                        <p>${upg.desc}</p>
+                    </div>
+                    <button class="buy-btn ${upg.purchased ? 'purchased' : ''}" data-id="${upg.id}">
+                        ${upg.purchased ? 'Purchased' : `Cost: ${currentCost} Ragdolls`}
+                    </button>
+                `;
+                const btn = card.querySelector('.buy-btn');
+                if (!upg.purchased) {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (kills >= currentCost) {
+                            kills -= currentCost;
+                            killsEl.textContent = Math.floor(kills);
+                            upg.purchased = true;
+                            
+                            if (upg.special === 'auto_shoot') {
+                                autoShootUnlocked = true;
+                                shootBtnMain.textContent = 'HOLD TO';
+                                shootBtnSub.textContent = 'AUTO FIRE';
+                            } else if (upg.special === 'kill_2x') {
+                                upgradeMultipliers.killMultiplier *= 2.0;
+                            } else if (upg.special === 'kill_5x') {
+                                upgradeMultipliers.killMultiplier *= 5.0;
+                            } else if (upg.special === 'ball_300') {
+                                upgradeMultipliers.ballSize += 3.0;
+                            } else if (upg.special === 'knockback_200') {
+                                upgradeMultipliers.knockback += 2.0;
+                            } else if (upg.special === 'speed_150') {
+                                upgradeMultipliers.speed += 1.5;
+                            } else if (upg.type === 1) {
+                                upgradeMultipliers.ballSize += 0.02;
+                            } else if (upg.type === 2) {
+                                upgradeMultipliers.ballSize += 0.01;
+                                upgradeMultipliers.chargeSpeed += 0.03;
+                            } else if (upg.type === 3) {
+                                upgradeMultipliers.speed += 0.012;
+                                upgradeMultipliers.knockback += 0.012;
+                            } else if (upg.type === 4) {
+                                upgradeMultipliers.killMultiplier += 0.015;
+                            } else if (upg.type === 5) {
+                                upgradeMultipliers.speed += 0.011;
+                            }
+
+                            btn.textContent = 'Purchased';
+                            btn.classList.add('purchased');
+                            saveGameProgress();
+                            populateShopUI();
+                        } else {
+                            alert('Not enough ragdolls!');
+                        }
+                    });
+                }
+                shopGridContainer.appendChild(card);
+            });
+        }
+
+        function createCityStreetsAndHouses() {
+            const geom = new THREE.BoxGeometry(1, 1, 1);
+            const mat = new THREE.MeshLambertMaterial({ color: 0x2b2b40 });
+            buildingMeshInstanced = new THREE.InstancedMesh(geom, mat, NUM_BUILDINGS);
+            buildingMeshInstanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+            let index = 0;
+            for (let x = -CITY_SIZE + GRID_SPACING; x < CITY_SIZE - GRID_SPACING; x += GRID_SPACING) {
+                for (let z = -CITY_SIZE + GRID_SPACING; z < CITY_SIZE - GRID_SPACING; z += GRID_SPACING) {
+                    if (index >= NUM_BUILDINGS) break;
+
+                    const height = Math.random() * 45 + 18;
+                    const width = Math.random() * 18 + 14;
+                    const depth = Math.random() * 18 + 14;
+
+                    const posX = x + GRID_SPACING / 2;
+                    const posZ = z + GRID_SPACING / 2;
+
+                    dummy.position.set(posX, height / 2, posZ);
+                    dummy.scale.set(width, height, depth);
+                    dummy.updateMatrix();
+
+                    buildingMeshInstanced.setMatrixAt(index, dummy.matrix);
+                    buildingData.push({ x: posX, z: posZ, width: width, depth: depth });
+                    index++;
+                }
+            }
+            buildingMeshInstanced.instanceMatrix.needsUpdate = true;
+            scene.add(buildingMeshInstanced);
+        }
+
+        class DrivingCar {
+            constructor() {
+                this.group = new THREE.Group();
+                const body = new THREE.Mesh(
+                    new THREE.BoxGeometry(2.4, 1.2, 4.8),
+                    new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff })
+                );
+                body.position.y = 0.6;
+                this.group.add(body);
+
+                const roof = new THREE.Mesh(
+                    new THREE.BoxGeometry(2.0, 0.9, 2.6),
+                    new THREE.MeshLambertMaterial({ color: 0x222222 })
+                );
+                roof.position.set(0, 1.4, -0.2);
+                this.group.add(roof);
+
+                scene.add(this.group);
+                this.speed = 0.8 + Math.random() * 0.4;
+                this.axis = Math.random() > 0.5 ? 'x' : 'z';
+                this.respawn();
+            }
+
+            respawn() {
+                const posRange = CITY_SIZE - 50;
+                const streetArray = this.axis === 'x' ? streetZ : streetX;
+                const fixedCoord = streetArray[Math.floor(Math.random() * streetArray.length)];
+
+                if (this.axis === 'x') {
+                    this.group.position.set((Math.random() - 0.5) * posRange, 0, fixedCoord);
+                    this.dir = Math.random() > 0.5 ? 1 : -1;
+                } else {
+                    this.group.position.set(fixedCoord, 0, (Math.random() - 0.5) * posRange);
+                    this.dir = Math.random() > 0.5 ? 1 : -1;
+                }
+            }
+
+            update() {
+                const pos = this.group.position;
+                if (this.axis === 'x') {
+                    pos.x += this.speed * this.dir;
+                    this.group.rotation.y = this.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+                    if (Math.abs(pos.x) > CITY_SIZE - 40) this.dir *= -1;
+                } else {
+                    pos.z += this.speed * this.dir;
+                    this.group.rotation.y = this.dir > 0 ? 0 : Math.PI;
+                    if (Math.abs(pos.z) > CITY_SIZE - 40) this.dir *= -1;
+                }
+
+                if (!isHiddenInDumpster && pos.distanceTo(johnCharacter.group.position) < 2.5 && !johnCharacter.isRagdoll && !johnCharacter.isRecovering) {
+                    johnCharacter.triggerRagdoll(new THREE.Vector3(this.dir * 1.8, 0.8, (Math.random() - 0.5) * 1.0));
+                }
+            }
+        }
+
+        class Dumpster {
+            constructor(x, z) {
+                this.x = x;
+                this.z = z;
+                const geo = new THREE.BoxGeometry(3.6, 1.6, 2.2);
+                const mat = new THREE.MeshLambertMaterial({ color: 0x1e4d2b });
+                this.mesh = new THREE.Mesh(geo, mat);
+                this.mesh.position.set(x, 0.8, z);
+                scene.add(this.mesh);
+            }
+        }
+
+        function createDumpsters() {
+            for (let i = 0; i < NUM_DUMPSTERS; i++) {
+                const b = buildingData[Math.floor(Math.random() * buildingData.length)];
+                const dx = b.x + (Math.random() > 0.5 ? 1 : -1) * (b.width / 2 + 3);
+                const dz = b.z + (Math.random() > 0.5 ? 1 : -1) * (b.depth / 2 + 3);
+                dumpsters.push(new Dumpster(dx, dz));
+            }
+        }
+
+        function toggleDumpsterHide() {
+            if (!johnCharacter || johnCharacter.isRagdoll) return;
+            const pos = johnCharacter.group.position;
+
+            if (isHiddenInDumpster) {
+                isHiddenInDumpster = false;
+                johnCharacter.group.visible = true;
+                hideBtn.style.display = 'none';
+                pos.z += 3.0;
+            } else {
+                for (let i = 0; i < dumpsters.length; i++) {
+                    const d = dumpsters[i];
+                    if (Math.hypot(pos.x - d.x, pos.z - d.z) < 4.0) {
+                        isHiddenInDumpster = true;
+                        johnCharacter.group.visible = false;
+                        hideBtn.style.display = 'flex';
+                        hideBtn.querySelector('span').textContent = 'EXIT';
+                        break;
+                    }
+                }
+            }
+        }
+
+        function createAnimatedEyeTexture(pupilOffsetX = 0, pupilOffsetY = 0, isSquinting = false) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(64, 64, 50, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = '#000000';
+            ctx.stroke();
+
+            ctx.fillStyle = '#111122';
+            ctx.beginPath();
+            ctx.arc(64 + pupilOffsetX * 15, 64 + pupilOffsetY * 15, isSquinting ? 12 : 22, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(56 + pupilOffsetX * 15, 52 + pupilOffsetY * 15, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createJohnFaceTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#f2cdb3';
+            ctx.fillRect(0, 0, 256, 256);
+
+            ctx.fillStyle = '#7a5230';
+            ctx.beginPath();
+            ctx.arc(128, 70, 110, Math.PI, 0, false);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.rect(18, 60, 220, 50);
+            ctx.fill();
+
+            ctx.strokeStyle = '#2b1d12';
+            ctx.lineWidth = 6;
+
+            ctx.beginPath();
+            ctx.moveTo(65, 130);
+            ctx.lineTo(105, 132);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(151, 132);
+            ctx.lineTo(191, 130);
+            ctx.stroke();
+
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.moveTo(60, 115);
+            ctx.lineTo(105, 120);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(150, 120);
+            ctx.lineTo(195, 112);
+            ctx.stroke();
+
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.moveTo(80, 195);
+            ctx.quadraticCurveTo(128, 175, 176, 190);
+            ctx.stroke();
+
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(128, 220, 25, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        class DetailedCharacter {
+            constructor(isPlayer = false, shirtColor = 0x5a5438, pantsColor = 0x1f1f2e) {
+                this.isPlayer = isPlayer;
+                this.isRagdoll = false;
+                this.isRecovering = false;
+                this.recoveryProgress = 0;
+                this.ragdollTimer = 0;
+                this.throwAnimTimer = 0;
+                this.group = new THREE.Group();
+                this.velocity = new THREE.Vector3();
+                this.angularVel = new THREE.Vector3();
+                this.walkCycle = Math.random() * Math.PI * 2;
+
+                const s = 1.2;
+
+                const torsoGeo = new THREE.CylinderGeometry(0.5 * s, 0.45 * s, 1.4 * s, 10);
+                const torsoMat = new THREE.MeshLambertMaterial({ color: shirtColor });
+                this.torso = new THREE.Mesh(torsoGeo, torsoMat);
+                this.torso.position.y = 1.3 * s;
+                this.torso.castShadow = true;
+                this.group.add(this.torso);
+
+                const pantsGeo = new THREE.CylinderGeometry(0.45 * s, 0.4 * s, 0.7 * s, 10);
+                const pantsMat = new THREE.MeshLambertMaterial({ color: pantsColor });
+                this.pants = new THREE.Mesh(pantsGeo, pantsMat);
+                this.pants.position.y = 0.5 * s;
+                this.group.add(this.pants);
+
+                const headGeo = new THREE.SphereGeometry(0.45 * s, 16, 16);
+                const headMat = isPlayer ? 
+                    new THREE.MeshLambertMaterial({ map: createJohnFaceTexture() }) : 
+                    new THREE.MeshLambertMaterial({ color: 0xffccaa });
+                
+                this.head = new THREE.Mesh(headGeo, headMat);
+                this.head.position.y = 2.2 * s;
+                if (!isPlayer) this.head.rotation.y = Math.PI;
+                this.group.add(this.head);
+
+                if (!isPlayer) {
+                    const eyeGeo = new THREE.PlaneGeometry(0.18 * s, 0.18 * s);
+                    this.eyeMatLeft = new THREE.MeshBasicMaterial({ map: createAnimatedEyeTexture(0, 0), transparent: true });
+                    this.eyeMatRight = new THREE.MeshBasicMaterial({ map: createAnimatedEyeTexture(0, 0), transparent: true });
+
+                    this.eyeLeft = new THREE.Mesh(eyeGeo, this.eyeMatLeft);
+                    this.eyeLeft.position.set(-0.14 * s, 2.22 * s, 0.42 * s);
+                    this.group.add(this.eyeLeft);
+
+                    this.eyeRight = new THREE.Mesh(eyeGeo, this.eyeMatRight);
+                    this.eyeRight.position.set(0.14 * s, 2.22 * s, 0.42 * s);
+                    this.group.add(this.eyeRight);
+                }
+
+                if (isPlayer) {
+                    const hairGeo = new THREE.SphereGeometry(0.47 * s, 12, 12, 0, Math.PI * 2, 0, Math.PI * 0.6);
+                    const hairMat = new THREE.MeshLambertMaterial({ color: 0x6e4827 });
+                    const hairMesh = new THREE.Mesh(hairGeo, hairMat);
+                    hairMesh.position.set(0, 2.28 * s, 0);
+                    this.group.add(hairMesh);
+                } else {
+                    const hairGeo = new THREE.SphereGeometry(0.47 * s, 12, 12);
+                    const hairMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
+                    const hairMesh = new THREE.Mesh(hairGeo, hairMat);
+                    hairMesh.position.set(0, 2.3 * s, 0);
+                    this.group.add(hairMesh);
+                }
+
+                const armGeo = new THREE.CylinderGeometry(0.14 * s, 0.14 * s, 1.0 * s, 6);
+                const armMat = new THREE.MeshLambertMaterial({ color: shirtColor });
+
+                this.leftArm = new THREE.Mesh(armGeo, armMat);
+                this.leftArm.position.set(-0.65 * s, 1.4 * s, 0);
+                this.group.add(this.leftArm);
+
+                this.rightArm = new THREE.Mesh(armGeo, armMat);
+                this.rightArm.position.set(0.65 * s, 1.4 * s, 0);
+                this.group.add(this.rightArm);
+
+                const legGeo = new THREE.CylinderGeometry(0.18 * s, 0.14 * s, 1.0 * s, 6);
+                const legMat = new THREE.MeshLambertMaterial({ color: pantsColor });
+
+                this.leftLeg = new THREE.Mesh(legGeo, legMat);
+                this.leftLeg.position.set(-0.25 * s, -0.1 * s, 0);
+                this.group.add(this.leftLeg);
+
+                this.rightLeg = new THREE.Mesh(legGeo, legMat);
+                this.rightLeg.position.set(0.25 * s, -0.1 * s, 0);
+                this.group.add(this.rightLeg);
+
+                scene.add(this.group);
+            }
+
+            animateWalking(speed) {
+                if (this.isRagdoll || this.isRecovering) return;
+                if (this.throwAnimTimer > 0) {
+                    this.throwAnimTimer--;
+                    this.rightArm.rotation.x = -Math.PI / 2;
+                    this.leftArm.rotation.x = Math.PI / 6;
+                    return;
+                }
+
+                this.walkCycle += speed * 0.3;
+                const angle = Math.sin(this.walkCycle) * 0.75;
+
+                this.leftLeg.rotation.x = angle;
+                this.rightLeg.rotation.x = -angle;
+                this.leftArm.rotation.x = -angle;
+                this.rightArm.rotation.x = angle;
+            }
+
+            triggerRagdoll(forceVector) {
+                if (this.isRagdoll || this.isRecovering) return;
+                this.isRagdoll = true;
+                this.isRecovering = false;
+                this.ragdollTimer = 0;
+                this.velocity.copy(forceVector);
+                this.angularVel.set((Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6);
+                if (this.isPlayer) standBtn.style.display = 'flex';
+            }
+
+            startRecovery() {
+                if (!this.isRagdoll || this.isRecovering) return;
+                this.group.position.y = 0.0;
+                this.velocity.set(0, 0, 0);
+                this.angularVel.set(0, 0, 0);
+
+                this.isRagdoll = false;
+                this.isRecovering = true;
+                this.recoveryProgress = 0;
+                if (this.isPlayer) standBtn.style.display = 'none';
+            }
+
+            standUp() {
+                this.startRecovery();
+            }
+
+            updatePhysics() {
+                if (this.isRagdoll) {
+                    this.ragdollTimer++;
+                    this.velocity.y -= 0.02;
+                    this.group.position.add(this.velocity);
+
+                    this.group.rotation.x += this.angularVel.x;
+                    this.group.rotation.y += this.angularVel.y;
+                    this.group.rotation.z += this.angularVel.z;
+
+                    if (this.group.position.y <= 0.4) {
+                        this.group.position.y = 0.4;
+                        this.velocity.x *= 0.8;
+                        this.velocity.z *= 0.8;
+                        this.velocity.y = -this.velocity.y * 0.25;
+                        this.angularVel.multiplyScalar(0.8);
+                    }
+
+                    checkBuildingCollision(this.group.position, 0.9);
+
+                    if (this.ragdollTimer > 150) {
+                        this.startRecovery();
+                    }
+                } else if (this.isRecovering) {
+                    this.recoveryProgress += 0.08;
+                    this.group.rotation.x = THREE.MathUtils.lerp(this.group.rotation.x, 0, this.recoveryProgress);
+                    this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, 0, this.recoveryProgress);
+                    this.leftArm.rotation.set(0, 0, 0);
+                    this.rightArm.rotation.set(0, 0, 0);
+                    this.leftLeg.rotation.set(0, 0, 0);
+                    this.rightLeg.rotation.set(0, 0, 0);
+
+                    if (this.recoveryProgress >= 1.0) {
+                        this.isRecovering = false;
+                        this.group.position.y = 0.0;
+                        this.group.rotation.set(0, this.group.rotation.y, 0);
+                    }
+                }
+            }
+        }
+
+        function createRemodeledCitizens() {
+            for (let i = 0; i < NUM_CITIZENS; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                // Ensures citizens spawn at least 50 units away from center spawn (0,0)
+                const dist = SPAWN_CLEARANCE_RADIUS + Math.random() * (CITY_SIZE - SPAWN_CLEARANCE_RADIUS - 40);
+                const x = Math.cos(angle) * dist;
+                const z = Math.sin(angle) * dist;
+
+                const cit = new DetailedCharacter(false, Math.random() * 0xffffff, Math.random() * 0xffffff);
+                cit.group.position.set(x, 0, z);
+
+                citizens.push({
+                    char: cit,
+                    dirX: Math.cos(Math.random() * Math.PI * 2),
+                    dirZ: Math.sin(Math.random() * Math.PI * 2),
+                    speed: 0.25
+                });
+            }
+        }
+
+        function createDrivingCars() {
+            for (let i = 0; i < NUM_CARS; i++) {
+                drivingCars.push(new DrivingCar());
+            }
+        }
+
+        function checkBuildingCollision(position, radius = 0.8) {
+            for (let i = 0; i < buildingData.length; i++) {
+                const b = buildingData[i];
+                const minX = b.x - b.width / 2 - radius;
+                const maxX = b.x + b.width / 2 + radius;
+                const minZ = b.z - b.depth / 2 - radius;
+                const maxZ = b.z + b.depth / 2 + radius;
+
+                if (position.x > minX && position.x < maxX && position.z > minZ && position.z < maxZ) {
+                    const distLeft = Math.abs(position.x - minX);
+                    const distRight = Math.abs(position.x - maxX);
+                    const distTop = Math.abs(position.z - minZ);
+                    const distBottom = Math.abs(position.z - maxZ);
+                    const minDist = Math.min(distLeft, distRight, distTop, distBottom);
+
+                    if (minDist === distLeft) position.x = minX;
+                    else if (minDist === distRight) position.x = maxX;
+                    else if (minDist === distTop) position.z = minZ;
+                    else if (minDist === distBottom) position.z = maxZ;
+                }
+            }
+        }
+
+        class BallProjectile {
+            constructor(spawnPos, targetDirection, powerScale) {
+                this.radius = (Math.random() * 0.4 + 1.2) * powerScale * upgradeMultipliers.ballSize;
+                this.speed = 1.4 * powerScale * upgradeMultipliers.speed;
+                this.velocity = targetDirection.clone().multiplyScalar(this.speed);
+                this.ignorePlayerFrames = 25;
+
+                const geo = new THREE.SphereGeometry(this.radius, 16, 16);
+                const mat = new THREE.MeshLambertMaterial({ color: 0xff1a1a });
+
+                this.mesh = new THREE.Mesh(geo, mat);
+                this.mesh.position.copy(spawnPos);
+                scene.add(this.mesh);
+                this.life = 120;
+            }
+
+            update() {
+                this.mesh.position.add(this.velocity);
+                this.mesh.rotation.x += 0.2;
+                this.life--;
+
+                if (this.ignorePlayerFrames > 0) this.ignorePlayerFrames--;
+                checkBuildingCollision(this.mesh.position, this.radius);
+            }
+
+            destroy() {
+                scene.remove(this.mesh);
+                if (this.mesh.geometry) this.mesh.geometry.dispose();
+                if (this.mesh.material) this.mesh.material.dispose();
+            }
+        }
+
+        function setupJoystick() {
+            const handleTouch = (e) => {
+                const rect = joystickZone.getBoundingClientRect();
+                const touch = e.touches ? e.touches[0] : e;
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                let deltaX = touch.clientX - centerX;
+                let deltaY = touch.clientY - centerY;
+                const distance = Math.hypot(deltaX, deltaY);
+                const maxRadius = rect.width / 2;
+
+                if (distance > maxRadius) {
+                    deltaX = (deltaX / distance) * maxRadius;
+                    deltaY = (deltaY / distance) * maxRadius;
+                }
+
+                joystickKnob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+                joystickDir.x = deltaX / maxRadius;
+                joystickDir.z = deltaY / maxRadius;
+                joystickActive = true;
+            };
+
+            const resetJoystick = () => {
+                joystickKnob.style.transform = 'translate(-50%, -50%)';
+                joystickDir.x = 0;
+                joystickDir.z = 0;
+                joystickActive = false;
+            };
+
+            joystickZone.addEventListener('touchstart', handleTouch);
+            joystickZone.addEventListener('touchmove', handleTouch);
+            joystickZone.addEventListener('touchend', resetJoystick);
+
+            joystickZone.addEventListener('mousedown', (e) => {
+                joystickActive = true;
+                handleTouch(e);
+                const onMouseMove = (moveEvent) => handleTouch(moveEvent);
+                const onMouseUp = () => {
+                    resetJoystick();
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                };
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+            });
+        }
+
+        function standUpJohn() {
+            if (johnCharacter) johnCharacter.standUp();
+        }
+
+        function tryReleaseCharge(powerRatio = 1.0) {
+            if (johnCharacter.isRagdoll || johnCharacter.isRecovering || isHiddenInDumpster) return;
+
+            const powerScale = Math.max(0.5, powerRatio * 1.5) * upgradeMultipliers.knockback;
+            const pantsPos = johnCharacter.group.position.clone();
+            pantsPos.y += 0.8;
+
+            let shootDir = new THREE.Vector3(0, 0, -1);
+            if (joystickActive && (Math.abs(joystickDir.x) > 0.1 || Math.abs(joystickDir.z) > 0.1)) {
+                shootDir.set(joystickDir.x, 0, joystickDir.z).normalize();
+            } else {
+                shootDir.set(Math.sin(johnCharacter.group.rotation.y), 0, Math.cos(johnCharacter.group.rotation.y)).negate();
+            }
+
+            johnCharacter.throwAnimTimer = 15;
+            activeProjectiles.push(new BallProjectile(pantsPos, shootDir, powerScale));
+
+            ballsGrabbed++;
+            ballsGrabbedEl.textContent = ballsGrabbed;
+            saveGameProgress();
+        }
+
+        function startGame() {
+            chargeProgress = 0;
+            isCharging = false;
+            isShootingHeld = false;
+            isHiddenInDumpster = false;
+
+            killsEl.textContent = Math.floor(kills);
+            ballsGrabbedEl.textContent = ballsGrabbed;
+            rebirthsEl.textContent = rebirths;
+            chargeFill.style.width = '0%';
+            hideBtn.style.display = 'none';
+
+            activeProjectiles.forEach(p => p.destroy());
+            activeProjectiles = [];
+
+            johnCharacter.group.position.set(0, 0, 0);
+            johnCharacter.group.visible = true;
+            johnCharacter.standUp();
+
+            startScreen.style.display = 'none';
+            isGameRunning = true;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isGameRunning) {
+                let closestDumpster = null;
+                let minDistToDumpster = 999;
+                const johnPos = johnCharacter.group.position;
+
+                dumpsters.forEach(d => {
+                    const dist = Math.hypot(johnPos.x - d.x, johnPos.z - d.z);
+                    if (dist < minDistToDumpster) {
+                        minDistToDumpster = dist;
+                        closestDumpster = d;
+                    }
+                });
+
+                if (closestDumpster && minDistToDumpster < 5.0 && !isHiddenInDumpster && isOnScreen(new THREE.Vector3(closestDumpster.x, 0.8, closestDumpster.z))) {
+                    const tempVec = new THREE.Vector3(closestDumpster.x, 2.0, closestDumpster.z);
+                    tempVec.project(camera);
+                    const sx = (tempVec.x * 0.5 + 0.5) * window.innerWidth;
+                    const sy = (-(tempVec.y * 0.5) + 0.5) * window.innerHeight;
+                    dumpsterPromptEl.style.left = `${sx}px`;
+                    dumpsterPromptEl.style.top = `${sy}px`;
+                    dumpsterPromptEl.style.display = 'block';
+                } else {
+                    dumpsterPromptEl.style.display = 'none';
+                }
+
+                let nearDumpster = minDistToDumpster < 4.0;
+                if (nearDumpster || isHiddenInDumpster) {
+                    hideBtn.style.display = 'flex';
+                    if (!isHiddenInDumpster) hideBtn.querySelector('span').textContent = 'HIDE';
+                } else if (!isHiddenInDumpster) {
+                    hideBtn.style.display = 'none';
+                }
+
+                if (!isHiddenInDumpster) {
+                    if (!johnCharacter.isRagdoll && !johnCharacter.isRecovering) {
+                        let moveX = joystickDir.x;
+                        let moveZ = joystickDir.z;
+
+                        if (keys['KeyW'] || keys['ArrowUp']) moveZ = -1;
+                        if (keys['KeyS'] || keys['ArrowDown']) moveZ = 1;
+                        if (keys['KeyA'] || keys['ArrowLeft']) moveX = -1;
+                        if (keys['KeyD'] || keys['ArrowRight']) moveX = 1;
+
+                        const moveVec = new THREE.Vector3(moveX, 0, moveZ);
+                        if (moveVec.lengthSq() > 0.01) {
+                            moveVec.normalize().multiplyScalar(0.38 * upgradeMultipliers.speed);
+                            johnCharacter.group.position.add(moveVec);
+                            johnCharacter.group.rotation.y = Math.atan2(moveVec.x, moveVec.z);
+                            johnCharacter.animateWalking(0.38 * upgradeMultipliers.speed);
+                        }
+                    }
+
+                    const bound = CITY_SIZE - 2;
+                    johnCharacter.group.position.x = Math.max(-bound, Math.min(bound, johnCharacter.group.position.x));
+                    johnCharacter.group.position.z = Math.max(-bound, Math.min(bound, johnCharacter.group.position.z));
+
+                    checkBuildingCollision(johnCharacter.group.position, 0.8);
+                    johnCharacter.updatePhysics();
+                }
+
+                camera.position.x = THREE.MathUtils.lerp(camera.position.x, johnCharacter.group.position.x, 0.1);
+                camera.position.z = THREE.MathUtils.lerp(camera.position.z, johnCharacter.group.position.z + 22, 0.1);
+                camera.lookAt(johnCharacter.group.position.x, 1.4, johnCharacter.group.position.z);
+
+                // Auto-Shooter logic (fires every 0.1s while holding button ONLY if upgrade is unlocked)
+                if (isShootingHeld && autoShootUnlocked && !johnCharacter.isRagdoll && !johnCharacter.isRecovering && !isHiddenInDumpster) {
+                    autoShootTimer += 1 / 60;
+                    chargeFill.style.width = '100%';
+                    if (autoShootTimer >= 0.1) {
+                        autoShootTimer = 0;
+                        tryReleaseCharge(1.0);
+                    }
+                } 
+                // Manual Charging logic (without upgrade: charges up and fires ONCE when reaching 100%)
+                else if (isShootingHeld && !autoShootUnlocked && isCharging && !johnCharacter.isRagdoll && !johnCharacter.isRecovering && !isHiddenInDumpster) {
+                    chargeProgress = Math.min(100, chargeProgress + (3.0 * upgradeMultipliers.chargeSpeed));
+                    chargeFill.style.width = chargeProgress + '%';
+                    if (chargeProgress >= 100) {
+                        tryReleaseCharge(1.0);
+                        chargeProgress = 0;
+                        isCharging = false;
+                    }
+                }
+
+                for (let i = activeProjectiles.length - 1; i >= 0; i--) {
+                    const proj = activeProjectiles[i];
+                    proj.update();
+
+                    const pPos = proj.mesh.position;
+                    for (let j = 0; j < citizens.length; j++) {
+                        const cit = citizens[j];
+                        const dist = pPos.distanceTo(cit.char.group.position);
+
+                        if (dist < proj.radius + 1.0) {
+                            if (!cit.char.isRagdoll && !cit.char.isRecovering) {
+                                cit.char.triggerRagdoll(proj.velocity.clone().multiplyScalar(0.8));
+                                kills += 1.0 * upgradeMultipliers.killMultiplier;
+                                killsEl.textContent = Math.floor(kills);
+                                saveGameProgress();
+                            }
+                        }
+                    }
+
+                    if (proj.ignorePlayerFrames === 0 && !isHiddenInDumpster) {
+                        if (pPos.distanceTo(johnCharacter.group.position) < proj.radius + 1.0 && !johnCharacter.isRagdoll && !johnCharacter.isRecovering) {
+                            johnCharacter.triggerRagdoll(proj.velocity.clone().multiplyScalar(0.7));
+                        }
+                    }
+
+                    if (Math.abs(pPos.x) > CITY_SIZE || Math.abs(pPos.z) > CITY_SIZE || proj.life <= 0) {
+                        proj.destroy();
+                        activeProjectiles.splice(i, 1);
+                    }
+                }
+
+                for (let j = 0; j < citizens.length; j++) {
+                    const cit = citizens[j];
+                    cit.char.updatePhysics();
+
+                    if (cit.char.isRagdoll) {
+                        cit.char.ragdollTimer++;
+                        if (cit.char.ragdollTimer > 150) {
+                            cit.char.startRecovery();
+                            cit.dirX = (Math.random() - 0.5) * 0.2;
+                            cit.dirZ = (Math.random() - 0.5) * 0.2;
+                        }
+                    } else if (!cit.char.isRecovering) {
+                        if (Math.random() < 0.02) {
+                            cit.dirX = (Math.random() - 0.5) * 0.2;
+                            cit.dirZ = (Math.random() - 0.5) * 0.2;
+                        }
+                        const moveStep = new THREE.Vector3(cit.dirX, 0, cit.dirZ).normalize().multiplyScalar(cit.speed);
+                        cit.char.group.position.add(moveStep);
+                        cit.char.group.rotation.y = Math.atan2(cit.dirX, cit.dirZ);
+
+                        if (Math.abs(cit.char.group.position.x) > CITY_SIZE - 5 || Math.abs(cit.char.group.position.z) > CITY_SIZE - 5) {
+                            cit.dirX *= -1;
+                            cit.dirZ *= -1;
+                        }
+
+                        checkBuildingCollision(cit.char.group.position, 0.8);
+                        cit.char.animateWalking(cit.speed);
+                    }
+                }
+
+                for (let j = 0; j < drivingCars.length; j++) {
+                    drivingCars[j].update();
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        initThree();
+        animate();
+    </script>
+</body>
+</html>
